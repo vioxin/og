@@ -2,21 +2,89 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>MIND-0 in 3D PLAZA</title>
+  <title>MIND-0: JUDGEMENT</title>
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: sans-serif; text-align: center; }
+    /* 全体の設定：サイバーゴシックな雰囲気 */
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; }
     #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
     
-    /* 手前のUIを3Dの上に重ねる */
+    /* UIレイヤー：ネオンエフェクトとグラスモーフィズム */
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-    
-    /* ゲームUI部分 (pointer-events: autoでクリックできるようにする) */
-    .game-ui { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
     .hidden { display: none !important; }
-    .card-btn { font-size: 24px; padding: 15px 30px; margin: 10px; cursor: pointer; border-radius: 10px; border: none; background: #eee; font-weight: bold; transition: transform 0.1s; }
-    .card-btn:hover { background: #ff007a; color: white; transform: scale(1.05); }
-    #log { margin: 20px; font-size: 20px; color: #00ff88; font-weight: bold; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; backdrop-filter: blur(5px); }
-    .hp-text { font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.4); padding: 5px 20px; border-radius: 20px;}
+    
+    /* ネオンロゴ */
+    .game-logo { width: 400px; max-width: 80%; margin-top: 50px; filter: drop-shadow(0 0 15px #ff007a); }
+
+    /* ロビー画面 */
+    .game-ui { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .glass-panel { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 50px 80px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+
+    /* かっこいいボタンの設定 */
+    .card-btn { font-size: 20px; padding: 15px 40px; margin: 10px; cursor: pointer; border-radius: 30px; border: 2px solid white; background: transparent; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: all 0.2s; position: relative; overflow: hidden;}
+    .card-btn:hover { background: #ff007a; border-color: #ff007a; box-shadow: 0 0 20px #ff007a; transform: scale(1.05); }
+
+    /* 入力フォームのネオン化 */
+    #room-input { font-size:20px; padding:12px; border:2px solid #ccc; border-radius:10px; background: rgba(0,0,0,0.5); color:white; margin-bottom: 20px; transition: border-color 0.2s; }
+    #room-input:focus { border-color: #ff007a; outline: none; }
+
+    /* メッセージテキストのネオン化 */
+    #log, #lobby-msg { margin: 20px; font-size: 24px; color: #ff007a; font-weight: bold; text-shadow: 0 0 10px #ff007a; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; }
+
+    /* バトル画面のレイアウト：対面形式 */
+    #battle-screen { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; padding: 20px; box-sizing: border-box; }
+    .status-area { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px 30px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); }
+    .hp-text { font-size: 28px; font-weight: bold; text-shadow: 0 0 10px #ff007a;}
+
+    /* アバター・カードエリア */
+    .game-board { display: flex; justify-content: center; align-items: center; gap: 50px; }
+    
+    /* イラスト付きカードの設定：Midjourney生成想定画像をImgurにアップロード */
+    .card {
+      width: 150px; height: 210px;
+      border-radius: 15px;
+      border: 2px solid white;
+      box-shadow: 0 0 15px rgba(0,0,0,0.8);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      transition: all 0.3s;
+    }
+    .card::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 13px; border: 1px solid rgba(255,255,255,0.3); }
+
+    /* カードの種類ごとの画像設定（ImgurのパブリックURLを使用） */
+    
+    /* 手札（ATTACK） */
+    #hand-attack { background-image: url('https://i.imgur.com/QeN8I9N.png'); border-color: #00ddff; box-shadow: 0 0 15px #00ddff; cursor: pointer;}
+    #hand-attack:hover { transform: scale(1.1) rotate(5deg); }
+    
+    /* 手札（BLUFF） */
+    #hand-bluff { background-image: url('https://i.imgur.com/39wF4uG.png'); border-color: #ff007a; box-shadow: 0 0 15px #ff007a; cursor: pointer;}
+    #hand-bluff:hover { transform: scale(1.1) rotate(-5deg); }
+
+    /* 伏せられたカード（裏面共通） */
+    .card-facedown { background-image: url('https://i.imgur.com/L4LqXfI.png'); border-color: white; filter: grayscale(100%); transition: all 1s; }
+    .card-facedown.revealed { filter: grayscale(0%); border-color: yellow; box-shadow: 0 0 25px yellow; }
+
+    /* 判定アイコン */
+    .judge-icon { width: 100px; height: 100px; background-size: contain; background-repeat: no-repeat; opacity: 0; transition: opacity 0.3s; margin-top: -50px;}
+    .truth-icon { background-image: url('https://i.imgur.com/vH97N0N.png'); filter: drop-shadow(0 0 10px #00ddff); } /* 判定のTruthアイコン（ロゴ流用） */
+    .bluff-icon { background-image: url('https://i.imgur.com/39wF4uG.png'); filter: drop-shadow(0 0 10px #ff007a); } /* 判定のLieアイコン */
+
+    /* 手札エリアの設定 */
+    #hand { pointer-events: auto; display: flex; gap: 20px; justify-content: center; }
+    
+    /* 判定フェーズのUI */
+    #judgement-panel {
+      pointer-events: auto; display: none;
+      background: rgba(0, 0, 0, 0.8); border: 1px solid red; border-radius: 20px;
+      padding: 30px;
+    }
+    .judgement-btn { font-size: 18px; padding: 10px 30px; }
+    .judge-true { border-color: #00ddff; color: #00ddff; }
+    .judge-true:hover { background: #00ddff; color: #000; box-shadow: 0 0 20px #00ddff; }
+    .judge-lie { border-color: #ff007a; color: #ff007a; }
+    .judge-lie:hover { background: #ff007a; color: #000; box-shadow: 0 0 20px #ff007a; }
+
   </style>
   
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -37,47 +105,55 @@
   <div id="ui-layer">
     
     <div id="lobby-screen" class="game-ui">
-      <h1 style="font-size: 60px; text-shadow: 0 0 20px #ff007a; margin-bottom: 10px;">MIND-0</h1>
-      <p style="font-size: 18px; color: #ccc; margin-bottom: 40px; background: rgba(0,0,0,0.5); padding: 10px;">裏向きにカードを出し、数字が大きい方がダメージ！<br>0はカウンター（相手の攻撃を跳ね返す）</p>
+      <img src="https://i.imgur.com/vH97N0N.png" class="game-logo" alt="MIND-0 JUDGEMENT">
+      <br><br>
       
-      <button onclick="createRoom()" class="card-btn">ルームを作る</button>
-      
-      <div style="margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
-        <input type="text" id="room-input" placeholder="部屋番号を入力" style="font-size:20px; padding:10px; border:none; border-radius:5px;">
-        <button onclick="joinRoom()" class="card-btn">ルームに参加</button>
+      <div class="glass-panel">
+        <button onclick="createRoom()" class="card-btn">ルームを作る</button>
+        <div style="margin: 30px 0;">
+          <input type="text" id="room-input" placeholder="部屋番号を入力">
+          <br>
+          <button onclick="joinRoom()" class="card-btn">ルームに参加</button>
+        </div>
+        <button onclick="playCPU()" class="card-btn" style="border-color: #444; color:#888;">CPUと対戦する</button>
       </div>
-      
-      <button onclick="playCPU()" class="card-btn" style="background:#444; color:white;">CPUと対戦する</button>
-      <p id="lobby-msg" style="font-size: 24px; font-weight: bold; color: yellow;"></p>
+      <p id="lobby-msg"></p>
     </div>
 
+
     <div id="battle-screen" class="game-ui hidden">
-      <div class="hp-text">敵のHP: <span id="enemy-hp" style="color:#ff5555;">10</span></div>
-      <div id="log">カードを選んでください...</div>
-      <div class="hp-text">あなたのHP: <span id="my-hp" style="color:#55ff55;">10</span></div>
       
-      <div id="hand" style="display: flex; gap: 10px; justify-content: center; margin-top: 30px; flex-wrap: wrap; width: 100%; max-width: 600px;">
+      <div class="status-area" style="grid-row: 1; margin-bottom: 20px; border-color: #444; background: rgba(0,0,0,0.5);">
+        <span style="color:#888;">敵のHP</span>
+        <span id="enemy-hp" class="hp-text" style="color:#888;">🖤🖤🖤</span>
+      </div>
+
+      <div class="game-board" style="grid-row: 2;">
         
-        <button class="card-btn" onclick="playCard(1)" style="background: #ff4444; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
-          <span style="font-size: 30px;">⚔️</span><br>斬撃<br><span style="font-size:12px; font-weight:normal;">3ﾀﾞﾒｰｼﾞ</span>
-        </button>
+        <div id="enemy-card" class="card card-facedown"></div>
         
-        <button class="card-btn" onclick="playCard(2)" style="background: #44aa44; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
-          <span style="font-size: 30px;">🛡️</span><br>防御<br><span style="font-size:12px; font-weight:normal;">防ぐ&反撃1</span>
-        </button>
-        
-        <button class="card-btn" onclick="playCard(3)" style="background: #ddaa00; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
-          <span style="font-size: 30px;">🔨</span><br>崩し<br><span style="font-size:12px; font-weight:normal;">防御を割る</span>
-        </button>
-        
-        <button class="card-btn" onclick="playCard(4)" style="background: #8844cc; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
-          <span style="font-size: 30px;">🦇</span><br>呪い<br><span style="font-size:12px; font-weight:normal;">吸収1ﾀﾞﾒ</span>
-        </button>
-        
-        <button class="card-btn" onclick="playCard(0)" style="background: #4444ff; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5; border: 2px solid #fff;">
-          <span style="font-size: 30px;">🪞</span><br>反射<br><span style="font-size:12px; font-weight:normal;">斬/崩を返す</span>
-        </button>
-        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div id="log">審判の始まりだ...。</div>
+          
+          <div id="judgement-panel">
+            <p style="margin-top:0;">相手の伏せ札は...？</p>
+            <button class="card-btn judgement-btn judge-true" onclick="submitJudgement(1)">真実(Attack)だ!</button>
+            <br>
+            <button class="card-btn judgement-btn judge-lie" onclick="submitJudgement(0)">嘘(Bluff)だ!</button>
+          </div>
+        </div>
+
+        <div id="my-card" class="card card-facedown"></div>
+      </div>
+
+      <div class="status-area" style="grid-row: 3; margin-top: 20px;">
+        <span style="color:#fff;">あなたのHP</span>
+        <span id="my-hp" class="hp-text">❤️❤️❤️</span>
+      </div>
+
+      <div id="hand-area" style="pointer-events: auto; position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;">
+        <div id="hand-attack" class="card" onclick="faceDownCard(1)"></div>
+        <div id="hand-bluff" class="card" onclick="faceDownCard(0)"></div>
       </div>
     </div>
 
