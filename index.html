@@ -57,12 +57,28 @@
       <div id="log">カードを選んでください...</div>
       <div class="hp-text">あなたのHP: <span id="my-hp" style="color:#55ff55;">10</span></div>
       
-      <div id="hand" style="margin-top: 30px;">
-        <button class="card-btn" onclick="playCard(1)">1</button>
-        <button class="card-btn" onclick="playCard(2)">2</button>
-        <button class="card-btn" onclick="playCard(3)">3</button>
-        <button class="card-btn" onclick="playCard(4)">4</button>
-        <button class="card-btn" onclick="playCard(0)" style="background: linear-gradient(45deg, #0055ff, #00aaff); color:white;">0 (カウンター)</button>
+      <div id="hand" style="display: flex; gap: 10px; justify-content: center; margin-top: 30px; flex-wrap: wrap; width: 100%; max-width: 600px;">
+        
+        <button class="card-btn" onclick="playCard(1)" style="background: #ff4444; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
+          <span style="font-size: 30px;">⚔️</span><br>斬撃<br><span style="font-size:12px; font-weight:normal;">3ﾀﾞﾒｰｼﾞ</span>
+        </button>
+        
+        <button class="card-btn" onclick="playCard(2)" style="background: #44aa44; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
+          <span style="font-size: 30px;">🛡️</span><br>防御<br><span style="font-size:12px; font-weight:normal;">防ぐ&反撃1</span>
+        </button>
+        
+        <button class="card-btn" onclick="playCard(3)" style="background: #ddaa00; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
+          <span style="font-size: 30px;">🔨</span><br>崩し<br><span style="font-size:12px; font-weight:normal;">防御を割る</span>
+        </button>
+        
+        <button class="card-btn" onclick="playCard(4)" style="background: #8844cc; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5;">
+          <span style="font-size: 30px;">🦇</span><br>呪い<br><span style="font-size:12px; font-weight:normal;">吸収1ﾀﾞﾒ</span>
+        </button>
+        
+        <button class="card-btn" onclick="playCard(0)" style="background: #4444ff; color:white; width: 100px; height: 140px; display: flex; flex-direction: column; justify-content: center; line-height: 1.5; border: 2px solid #fff;">
+          <span style="font-size: 30px;">🪞</span><br>反射<br><span style="font-size:12px; font-weight:normal;">斬/崩を返す</span>
+        </button>
+        
       </div>
     </div>
 
