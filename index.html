@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>MIND-0 in 3D PLAZA</title>
+  <style>
+    /* 3Dキャンバスを背景にする設定 */
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: sans-serif; text-align: center; }
+    #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    
+    /* 手前のUIを3Dの上に重ねる */
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+    
+    /* ゲームUI部分 (pointer-events: autoでクリックできるようにする) */
+    .game-ui { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .hidden { display: none !important; }
+    .card-btn { font-size: 24px; padding: 15px 30px; margin: 10px; cursor: pointer; border-radius: 10px; border: none; background: #eee; font-weight: bold; transition: transform 0.1s; }
+    .card-btn:hover { background: #ff007a; color: white; transform: scale(1.05); }
+    #log { margin: 20px; font-size: 20px; color: #00ff88; font-weight: bold; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; backdrop-filter: blur(5px); }
+    .hp-text { font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.4); padding: 5px 20px; border-radius: 20px;}
+  </style>
+  
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <div id="ui-layer">
+    
+    <div id="lobby-screen" class="game-ui">
+      <h1 style="font-size: 60px; text-shadow: 0 0 20px #ff007a; margin-bottom: 10px;">MIND-0</h1>
+      <p style="font-size: 18px; color: #ccc; margin-bottom: 40px; background: rgba(0,0,0,0.5); padding: 10px;">裏向きにカードを出し、数字が大きい方がダメージ！<br>0はカウンター（相手の攻撃を跳ね返す）</p>
+      
+      <button onclick="createRoom()" class="card-btn">ルームを作る</button>
+      
+      <div style="margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
+        <input type="text" id="room-input" placeholder="部屋番号を入力" style="font-size:20px; padding:10px; border:none; border-radius:5px;">
+        <button onclick="joinRoom()" class="card-btn">ルームに参加</button>
+      </div>
+      
+      <button onclick="playCPU()" class="card-btn" style="background:#444; color:white;">CPUと対戦する</button>
+      <p id="lobby-msg" style="font-size: 24px; font-weight: bold; color: yellow;"></p>
+    </div>
+
+    <div id="battle-screen" class="game-ui hidden">
+      <div class="hp-text">敵のHP: <span id="enemy-hp" style="color:#ff5555;">10</span></div>
+      <div id="log">カードを選んでください...</div>
+      <div class="hp-text">あなたのHP: <span id="my-hp" style="color:#55ff55;">10</span></div>
+      
+      <div id="hand" style="margin-top: 30px;">
+        <button class="card-btn" onclick="playCard(1)">1</button>
+        <button class="card-btn" onclick="playCard(2)">2</button>
+        <button class="card-btn" onclick="playCard(3)">3</button>
+        <button class="card-btn" onclick="playCard(4)">4</button>
+        <button class="card-btn" onclick="playCard(0)" style="background: linear-gradient(45deg, #0055ff, #00aaff); color:white;">0 (カウンター)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+/* 全体のリセットと基本設定 */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* スクロールバーを消す */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background-color: #000;
+}
+
+/* 3Dキャンバスの設定 */
+#webgl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* UIレイヤーの設定 */
+#ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* UIの隙間から3D空間をクリックできるようにする */
+}
+
+/* スタート画面のすりガラス風パネル */
+#start-screen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  pointer-events: auto; /* ここはクリックできるようにする */
+  transition: opacity 1s ease; /* 消えるときフワッと消す */
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px); /* すりガラス効果 */
+  -webkit-backdrop-filter: blur(10px);
+  padding: 50px 80px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel h1 {
+  font-size: 3rem;
+  margin: 0 0 10px 0;
+  letter-spacing: 2px;
+}
+
+/* スタートボタンの装飾 */
+#start-button {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(45deg, #ff007a, #7a00ff);
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#start-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 0, 122, 0.6);
+}
+
+/* メインUIの設定 */
+#main-ui {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: white;
+  pointer-events: auto;
+}
+
+.hidden {
+  opacity: 0;
+  pointer-events: none !important;
+}
