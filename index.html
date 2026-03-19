@@ -38,7 +38,7 @@
     /* アバター・カードエリア */
     .game-board { display: flex; justify-content: center; align-items: center; gap: 50px; }
     
-    /* イラスト付きカードの設定：Midjourney生成想定画像をImgurにアップロード */
+    /* イラスト付きカードの設定 */
     .card {
       width: 150px; height: 210px;
       border-radius: 15px;
@@ -51,24 +51,24 @@
     }
     .card::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 13px; border: 1px solid rgba(255,255,255,0.3); }
 
-    /* カードの種類ごとの画像設定（ImgurのパブリックURLを使用） */
+    /* ★カードの種類ごとの画像設定（ローカル画像に修正） */
     
     /* 手札（ATTACK） */
-    #hand-attack { background-image: url('https://i.imgur.com/QeN8I9N.png'); border-color: #00ddff; box-shadow: 0 0 15px #00ddff; cursor: pointer;}
+    #hand-attack { background-image: url('./attack.png'); border-color: #00ddff; box-shadow: 0 0 15px #00ddff; cursor: pointer;}
     #hand-attack:hover { transform: scale(1.1) rotate(5deg); }
     
     /* 手札（BLUFF） */
-    #hand-bluff { background-image: url('https://i.imgur.com/39wF4uG.png'); border-color: #ff007a; box-shadow: 0 0 15px #ff007a; cursor: pointer;}
+    #hand-bluff { background-image: url('./bluff.png'); border-color: #ff007a; box-shadow: 0 0 15px #ff007a; cursor: pointer;}
     #hand-bluff:hover { transform: scale(1.1) rotate(-5deg); }
 
     /* 伏せられたカード（裏面共通） */
-    .card-facedown { background-image: url('https://i.imgur.com/L4LqXfI.png'); border-color: white; filter: grayscale(100%); transition: all 1s; }
+    .card-facedown { background-image: url('./facedown.png'); border-color: white; filter: grayscale(100%); transition: all 1s; }
     .card-facedown.revealed { filter: grayscale(0%); border-color: yellow; box-shadow: 0 0 25px yellow; }
 
     /* 判定アイコン */
     .judge-icon { width: 100px; height: 100px; background-size: contain; background-repeat: no-repeat; opacity: 0; transition: opacity 0.3s; margin-top: -50px;}
-    .truth-icon { background-image: url('https://i.imgur.com/vH97N0N.png'); filter: drop-shadow(0 0 10px #00ddff); } /* 判定のTruthアイコン（ロゴ流用） */
-    .bluff-icon { background-image: url('https://i.imgur.com/39wF4uG.png'); filter: drop-shadow(0 0 10px #ff007a); } /* 判定のLieアイコン */
+    .truth-icon { background-image: url('./logo.png'); filter: drop-shadow(0 0 10px #00ddff); } 
+    .bluff-icon { background-image: url('./bluff.png'); filter: drop-shadow(0 0 10px #ff007a); } 
 
     /* 手札エリアの設定 */
     #hand { pointer-events: auto; display: flex; gap: 20px; justify-content: center; }
@@ -105,7 +105,7 @@
   <div id="ui-layer">
     
     <div id="lobby-screen" class="game-ui">
-      <img src="https://i.imgur.com/vH97N0N.png" class="game-logo" alt="MIND-0 JUDGEMENT">
+      <img src="./logo.png" class="game-logo" alt="MIND-0 JUDGEMENT">
       <br><br>
       
       <div class="glass-panel">
@@ -119,7 +119,6 @@
       </div>
       <p id="lobby-msg"></p>
     </div>
-
 
     <div id="battle-screen" class="game-ui hidden">
       
