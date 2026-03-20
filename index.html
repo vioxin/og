@@ -7,19 +7,16 @@
     <style>
         :root { --primary: #cbb982; font-family: sans-serif; }
         
-        /* 🌟 冥界（フォラン）の演出 */
         body { 
             margin: 0; padding: 0; color: #eee; overflow: hidden; height: 100vh; 
-            /* 現世の背景（ダークグレー〜緑系） */
             background: radial-gradient(circle at center, #2b332b 0%, #0a0a0a 100%);
             transition: background 1.5s ease-in-out; 
         }
         body.foran { 
-            /* 冥界の背景（禍々しい赤紫系） */
             background: radial-gradient(circle at center, #52001a 0%, #0f0005 100%); 
         }
 
-        section { display: none; width: 100%; height: 100%; position: absolute; flex-direction: column; align-items: center; justify-content: center; }
+        section { display: none; width: 100%; height: 100%; position: absolute; flex-direction: column; align-items: center; justify-content: center; z-index: 10;}
         section.active { display: flex; }
         
         .menu-panel { background: rgba(0,0,0,0.8); padding: 40px; border: 2px solid var(--primary); text-align: center; border-radius:10px; }
@@ -31,15 +28,20 @@
         #game-board { position: relative; width: 100vw; height: 100vh; }
 
         /* 他プレイヤー情報 (HUD) */
-        .player-hud { position: absolute; background: rgba(0,0,0,0.7); padding: 10px 20px; border: 1px solid #444; text-align:center; border-radius: 5px;}
+        .player-hud { position: absolute; background: rgba(0,0,0,0.7); padding: 8px 15px; border: 1px solid #444; text-align:center; border-radius: 5px; min-width: 100px;}
+        
+        /* 🌟 他プレイヤーの位置 */
         .p-hud-n { top: 20px; left: 50%; transform: translateX(-50%); }
         .p-hud-e { top: 50%; right: 20px; transform: translateY(-50%); }
         .p-hud-w { top: 50%; left: 20px; transform: translateY(-50%); }
-        .p-hud-s { bottom: 160px; left: 50%; transform: translateX(-50%); } /* 自分の上 */
-        .active-turn { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); background: rgba(80, 60, 20, 0.8);}
         
-        /* 🌟 場札エリア（完全中央） */
-        .field-area { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; }
+        /* 🌟 自分の情報 (画面最下部へ移動) */
+        .p-hud-s { bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 30, 0, 0.8); border-color: #33ff33;} 
+
+        .active-turn { border-color: var(--primary) !important; box-shadow: 0 0 15px var(--primary); background: rgba(80, 60, 20, 0.8) !important;}
+        
+        /* 場札エリア（完全中央） */
+        .field-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; }
         .f-card-wrap { position: absolute; display: flex; flex-direction: column; align-items: center; }
         .f-card-n { top: 0; left: 50%; transform: translateX(-50%); }
         .f-card-s { bottom: 0; left: 50%; transform: translateX(-50%); }
@@ -50,22 +52,22 @@
         .center-redstone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: #2a1010; border: 2px solid #444; }
         .center-redstone.on { background: #ff0000; box-shadow: 0 0 30px #ff0000; border-color: #ffcccc; }
 
-        /* 🌟 手札エリア（画面下部） */
-        .hand-area { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center;}
+        /* 🌟 手札エリア（自分のHUDの上に移動） */
+        .hand-area { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); text-align: center; }
         .hand { display: flex; gap: 15px;}
         
         /* カードのデザイン */
-        .card { width: 70px; height: 100px; border-radius: 5px; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 5px; border: 3px solid #ccc; user-select: none; transition: transform 0.2s;}
+        .card { width: 70px; height: 100px; border-radius: 5px; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 5px; border: 3px solid #ccc; user-select: none; transition: transform 0.2s; box-sizing: border-box; }
         .card:hover { transform: translateY(-5px); }
         .card.selected-red { border-color: #ff0000 !important; box-shadow: 0 0 15px #ff0000; transform: translateY(-15px); }
 
-        /* 🌟 チャットエリア（右下へ隔離） */
+        /* チャットエリア（右下） */
         #ui-panel { position: absolute; bottom: 30px; right: 30px; width: 300px; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid var(--primary); border-radius: 5px; display: flex; flex-direction: column; gap: 10px;}
         #chat-box { height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; font-size: 0.9em; line-height: 1.4; background: #000;}
         #chat-input-area { display: flex; flex-direction: column; gap: 5px; }
         #chat-input { padding: 8px; font-size: 1em; background: #222; border: 1px solid #555; color: white; }
 
-        /* 飛ぶカード用のアニメーション */
+        /* アニメーション用 */
         .flying-card { position: fixed; z-index: 9999; transition: all 0.5s ease-in-out; pointer-events: none; margin: 0 !important; }
     </style>
 </head>
@@ -85,7 +87,7 @@
 
     <section id="lobby-screen">
         <h2>待機の間 (ルーム: <span id="display-room-id" style="color:var(--primary); font-size:1.5em;"></span>)</h2>
-        <div id="player-list" style="display:flex; gap:20px; margin-bottom:20px; font-size:1.2em;"></div>
+        <div id="player-list" style="display:flex; gap:20px; margin-bottom:20px; font-size:1.2em; font-weight:bold;"></div>
         <p style="color:#aaa;">4人未満で開始した場合、空き枠にはCPUが自動で入ります。</p>
         <button id="start-game-btn" onclick="requestStartGame()" style="display:none; padding:15px 30px; font-size:1.2em; background:#800; color:white; border:none; cursor:pointer; border-radius:5px;">儀式を開始する</button>
     </section>
@@ -104,7 +106,7 @@
             </div>
 
             <div class="hand-area">
-                <div style="color:var(--primary); margin-bottom:10px; font-weight:bold;">あなたの手札 (右クリックで選択)</div>
+                <div style="color:var(--primary); margin-bottom:5px; font-weight:bold; font-size: 0.9em;">あなたの手札 (右クリックで選択)</div>
                 <div id="my-hand" class="hand"></div>
             </div>
 
@@ -133,7 +135,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // 🚪 ルーム作成
+        // ルーム作成
         function createRoom() {
             const name = document.getElementById('p-name-input').value;
             if (!name) return alert('名前を入力してください');
@@ -145,7 +147,7 @@
             showScreen('lobby-screen');
         });
 
-        // 🚪 ルーム参加
+        // ルーム参加
         function joinRoom() {
             const name = document.getElementById('p-name-input').value;
             const roomId = document.getElementById('room-id-input').value;
@@ -172,11 +174,12 @@
             socket.emit('rightClickHand', { roomId: currentRoom, index: index });
         }
 
-        // 🌟 状態の更新描画
+        // 状態の更新描画
         socket.on('updateState', (state) => {
             if (state.gameState === 'lobby') {
                 document.getElementById('player-list').innerHTML = state.players.map(p => `<div>${p.name} (${p.direction})</div>`).join('');
-                if(state.players[0].id === myId) document.getElementById('start-game-btn').style.display = 'block';
+                if(state.players.length > 0 && state.players[0].id === myId) document.getElementById('start-game-btn').style.display = 'block';
+                else document.getElementById('start-game-btn').style.display = 'none';
             } 
             else if (state.gameState === 'playing' || state.gameState === 'gameover') {
                 showScreen('game-screen');
@@ -184,15 +187,21 @@
                 // フォラン演出（背景変更）
                 if (state.isForan) document.body.classList.add('foran'); else document.body.classList.remove('foran');
 
-                ['N', 'E', 'S', 'W'].forEach((dir) => {
+                // 各プレイヤーのHUD更新
+                ['N', 'E', 'W', 'S'].forEach((dir) => {
                     const p = state.players.find(p => p.direction === dir);
                     const hudElement = document.getElementById(`hud-${dir}`);
-                    if (p && hudElement) {
-                        hudElement.innerHTML = `<div>${p.name}</div><div style="font-size:0.8em; color:#ccc;">得点: ${p.score}</div>`;
-                        if (state.turnIndex === state.players.indexOf(p) && state.gameState !== 'gameover') {
-                            hudElement.classList.add('active-turn');
+                    if (hudElement) {
+                        if (p) {
+                            hudElement.style.display = 'block';
+                            hudElement.innerHTML = `<div>${p.name}</div><div style="font-size:0.8em; color:#ccc;">得点: ${p.score}</div>`;
+                            if (state.turnIndex === state.players.indexOf(p) && state.gameState !== 'gameover') {
+                                hudElement.classList.add('active-turn');
+                            } else {
+                                hudElement.classList.remove('active-turn');
+                            }
                         } else {
-                            hudElement.classList.remove('active-turn');
+                            hudElement.style.display = 'none';
                         }
                     }
                 });
@@ -212,7 +221,7 @@
                     }).join('');
                     
                     const inputField = document.getElementById('chat-input');
-                    if (me.commandState !== 'idle') {
+                    if (me.commandState && me.commandState !== 'idle') {
                         inputField.style.border = '2px solid red'; inputField.style.background = '#400';
                     } else {
                         inputField.style.border = '1px solid #555'; inputField.style.background = '#222';
@@ -237,7 +246,7 @@
             box.scrollTop = box.scrollHeight;
         });
 
-        // 🌟 カードが飛ぶアニメーション
+        // アニメーション用
         socket.on('animateSwap', ({ playerId, playerDir, handIndex, targetDir }) => {
             let sourceEl;
             if (playerId === myId) {
