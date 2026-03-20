@@ -2,148 +2,62 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>現世と冥界の四柱 - 魔法詠唱カードゲーム</title>
+    <title>現世と冥界の四柱 - アシュラッテル</title>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <style>
-        :root {
-            --primary: #cbb982; /* 古代の金 */
-            --bg-gensei: #1a1a1a;
-            --bg-meikai: #050010;
-            --font-main: 'Segoe UI', 'Roboto', helvetica, sans-serif;
-            
-            /* カード色 */
-            --c-pink: #ff0080; --c-blue: #0080ff; --c-green: #00ff80; --c-yellow: #ffff00;
-        }
+        :root { --primary: #cbb982; --bg-gensei: #1a1a1a; --bg-meikai: #050010; font-family: sans-serif; }
+        body { margin: 0; padding: 0; color: #eee; overflow: hidden; height: 100vh; background: var(--bg-gensei); transition: background 1s ease;}
+        body.foran { background: var(--bg-meikai); }
+        section { display: none; width: 100%; height: 100%; position: absolute; flex-direction: column; align-items: center; justify-content: center; }
+        section.active { display: flex; }
+        
+        .menu-panel { background: rgba(0,0,0,0.8); padding: 40px; border: 2px solid var(--primary); text-align: center; border-radius:10px; }
+        .input-group { margin-bottom: 15px; }
+        input[type="text"] { padding: 10px; font-size: 1.1em; width: 250px; background: #333; color: #fff; border: 1px solid var(--primary); border-radius: 5px;}
+        button.main-btn { padding: 10px 30px; font-size: 1.2em; background: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; border-radius: 5px;}
 
-        body {
-            margin: 0; padding: 0; font-family: var(--font-main);
-            color: #eee; overflow: hidden; height: 100vh;
-        }
-
-        /* 画面切り替えの基本設定 */
-        section {
-            display: none; /* 初期状態は非表示 */
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
-            flex-direction: column; align-items: center; justify-content: center;
-        }
-        section.active { display: flex; animation: fadeIn 0.5s ease; } /* .activeが付いた画面を表示 */
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* --- メニュー画面 (image_1.pngを背景に) --- */
-        #menu-screen {
-            background-image: url('image_1.png');
-            background-size: cover; background-position: center;
-        }
-        .menu-panel {
-            background: rgba(0,0,0,0.8); padding: 40px; border-radius: 20px;
-            border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(203,185,130,0.5);
-            text-align: center;
-        }
-        h1.title { color: var(--primary); font-size: 3em; text-shadow: 0 0 15px var(--primary); margin-bottom: 30px; }
-        .input-group { margin-bottom: 20px; }
-        input[type="text"] {
-            padding: 15px; border-radius: 5px; border: 1px solid var(--primary);
-            background: rgba(0,0,0,0.5); color: white; font-size: 1.1em; width: 300px;
-        }
-        button.main-btn {
-            padding: 15px 40px; font-size: 1.3em; font-weight: bold; background: var(--primary);
-            border: none; border-radius: 10px; color: #111; cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.2s;
-        }
-        button.main-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--primary); }
-
-        /* --- 待機ロビー画面 --- */
-        #lobby-screen { background: var(--bg-gensei); }
-        #player-list { display: flex; gap: 20px; margin: 40px 0; }
-        .player-slot {
-            width: 150px; height: 200px; border: 2px dashed #444; border-radius: 10px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.05); color: gray; font-size: 1.2em;
-        }
-        .player-slot.occupied { border-style: solid; border-color: var(--primary); color: white; background: #000;}
-
-        /* --- ゲーム画面 (リッチ化) --- */
-        #game-screen {
-            background: var(--bg-gensei); transition: background 1s ease;
-        }
-        #game-screen.foran {
-            background: var(--bg-meikai); animation: meikai-glow 2s infinite alternate;
-        }
-        @keyframes meikai-glow { from { box-shadow: inset 0 0 50px rgba(128,0,255,0.3); } to { box-shadow: inset 0 0 100px rgba(128,0,255,0.5); } }
-
-        /* プレイヤー情報（電球とレッドストーン） */
-        .player-hud { position: absolute; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; border: 1px solid #444; }
-        .player-hud.active-turn { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        .player-hud { position: absolute; background: rgba(0,0,0,0.6); padding: 10px; border: 1px solid #444; text-align:center;}
         .p-hud-n { top: 10px; left: 50%; transform: translateX(-50%); }
         .p-hud-e { top: 50%; right: 10px; transform: translateY(-50%); }
         .p-hud-s { bottom: 10px; left: 50%; transform: translateX(-50%); }
         .p-hud-w { top: 50%; left: 10px; transform: translateY(-50%); }
+        .active-turn { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        
+        .field-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 350px; height: 350px; position: relative; }
+        .f-card-wrap { position: absolute; display: flex; flex-direction: column; align-items: center; }
+        .f-card-n { top: 0; left: 50%; transform: translateX(-50%); }
+        .f-card-s { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .f-card-e { top: 50%; right: 0; transform: translateY(-50%); }
+        .f-card-w { top: 50%; left: 0; transform: translateY(-50%); }
+        .dir-label { font-weight: bold; color: var(--primary); margin-bottom: 5px; text-shadow: 0 0 5px black;}
+        
+        .center-redstone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 5px; background: #2a1010; border: 2px solid #444; }
+        .center-redstone.on { background: #ff0000; box-shadow: 0 0 20px #ff0000; border-color: #ffcccc; }
 
-        .p-name { font-weight: bold; color: var(--primary); margin-bottom: 5px; }
-        .lamps { display: flex; gap: 5px; align-items: center; }
-        /* 銅の電球（スコア） */
-        .bulb { width: 15px; height: 15px; border-radius: 50%; background: #3a2a1a; border: 1px solid #5a4a3a; transition: background 0.5s; }
-        .bulb.on { background: #b87333; box-shadow: 0 0 10px #b87333; border-color: #ff9d4d; } /* 銅色に光る */
-        /* レッドストーンランプ（特殊技） */
-        .redstone { width: 15px; height: 15px; border-radius: 50%; background: #2a1010; border: 1px solid #4a2a2a; }
-        .redstone.on { background: #ff0000; box-shadow: 0 0 10px #ff0000; border-color: #ffcccc; } /* 赤く光る */
+        .hand-area { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); text-align: center;}
+        .hand { display: flex; gap: 15px; margin-top: 5px;}
+        .card { width: 80px; height: 110px; border-radius: 5px; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 5px; border: 3px solid #ccc; user-select: none;}
+        .card.selected-red { border-color: #ff0000; box-shadow: 0 0 15px #ff0000; transform: translateY(-10px); }
 
-        /* カードの美しいUI (サイバー・エジプト) */
-        .card {
-            width: 100px; height: 140px; border-radius: 8px; background: #000;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-            padding: 8px; border: 4px solid var(--c-main); box-shadow: 0 0 15px var(--c-main);
-            color: #fff; transition: transform 0.2s; position: relative;
-        }
-        .card:hover { transform: translateY(-10px); }
-        .card::before { /* カード内部の模様 */
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.5) 100%);
-        }
-        .c-type { font-size: 0.7em; letter-spacing: 0.1em; color: rgba(255,255,255,0.7); }
-        .c-symbol { font-size: 2.5em; text-shadow: 0 0 10px #fff; }
-        .c-number { font-size: 1.2em; font-weight: bold; }
-
-        .field-area { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        .hand-area { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); text-align: center; }
-        .hand { display: flex; gap: 15px; }
-
-        /* チャットとコマンドUI (サイバー風) */
-        #ui-panel {
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 700px; background: rgba(0,0,0,0.8);
-            padding: 10px; border-radius: 10px; border: 1px solid var(--primary);
-            display: flex; gap: 10px;
-        }
-        #chat-box { height: 100px; overflow-y: auto; flex: 1; border: 1px solid #333; padding: 5px; font-size: 0.85em; color: #ccc; }
+        #ui-panel { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 700px; background: rgba(0,0,0,0.8); padding: 10px; display: flex; gap: 10px; border: 1px solid var(--primary); }
+        #chat-box { height: 100px; overflow-y: auto; flex: 1; border: 1px solid #333; padding: 5px; font-size: 0.85em; }
         #chat-input-area { display: flex; flex-direction: column; gap: 5px; width: 250px; }
-        #ashuratteru-btn { background: #600; border: 2px solid #a00; font-size: 0.9em; text-shadow: 0 0 5px #f00;}
-        #ashuratteru-btn:hover { background: #900; box-shadow: 0 0 10px #f00; }
-
     </style>
 </head>
 <body>
-
     <section id="menu-screen" class="active">
         <div class="menu-panel">
-            <h1 class="title">現世と冥界の四柱</h1>
-            <div class="input-group">
-                <input type="text" id="p-name-input" placeholder="あなたの名前を入力" value="探求者">
-            </div>
+            <h1 style="color:var(--primary)">アシュラッテル</h1>
+            <div class="input-group"><input type="text" id="p-name-input" placeholder="あなたの名前" value="探求者"></div>
+            <div class="input-group"><input type="text" id="room-id-input" placeholder="ルーム番号" value="777"></div>
             <button class="main-btn" onclick="startLoadingLobby()">儀式に参加する</button>
         </div>
     </section>
 
     <section id="lobby-screen">
-        <h1 class="title">待機の間</h1>
-        <p>他の探求者の到着を待っています...</p>
-        <div id="player-list">
-            </div>
-        <div class="input-group">
-            <button class="main-btn" id="start-game-btn" onclick="requestStartGame()" style="display:none; background:#800; color:white;">4人でゲーム開始 (ホストのみ)</button>
-        </div>
-        <p style="color:gray; font-size:0.8em">※1人でも開始可能（CPUが代入されます）</p>
+        <h2>待機の間 (ルーム: <span id="display-room-id"></span>)</h2>
+        <div id="player-list" style="display:flex; gap:10px; margin-bottom:20px;"></div>
+        <button id="start-game-btn" onclick="requestStartGame()" style="display:none; padding:10px; background:#800; color:white; border:none; cursor:pointer;">ゲーム開始 (ホストのみ)</button>
     </section>
 
     <section id="game-screen">
@@ -153,8 +67,11 @@
         <div class="player-hud p-hud-w" id="hud-w"></div>
 
         <div class="field-area">
-            <h3>場のカード</h3>
-            <div id="field-card-container"></div>
+            <div class="f-card-wrap f-card-n"><div class="dir-label">N(ニルポ)</div><div id="field-N"></div></div>
+            <div class="f-card-wrap f-card-w"><div class="dir-label">W(ワルポ)</div><div id="field-W"></div></div>
+            <div class="center-redstone" id="shared-redstone"></div>
+            <div class="f-card-wrap f-card-e"><div class="dir-label">E(エルポ)</div><div id="field-E"></div></div>
+            <div class="f-card-wrap f-card-s"><div class="dir-label">S(サルポ)</div><div id="field-S"></div></div>
         </div>
 
         <div class="hand-area">
@@ -164,151 +81,116 @@
         <div id="ui-panel">
             <div id="chat-box"></div>
             <div id="chat-input-area">
-                <input type="text" id="chat-input" placeholder="魔法詠唱 (例: ムー)">
+                <input type="text" id="chat-input" placeholder="コマンドを入力 (例: ラトン)">
                 <div style="display:flex; gap:5px">
-                    <button onclick="sendCommand()" style="flex:1">詠唱</button>
-                    <button id="ashuratteru-btn" onclick="callAshuratteru()">⚡ 指摘</button>
+                    <button onclick="sendCommand()" style="flex:1">送信 / 詠唱</button>
+                    <button onclick="callAshuratteru()" style="background:#600; color:white; border:1px solid #f00;">⚡ 指摘</button>
                 </div>
             </div>
         </div>
     </section>
 
     <script>
-        // ⚠️ あなたのRenderのURLに書き換えてください。
-        const socket = io('https://threederea.onrender.com/'); 
-        
-        let currentRoom = 'ROOM_1'; // 今回は1つのルーム固定
+        const socket = io('https://あなたのアプリ名.onrender.com'); // ⚠️変更を忘れずに
+        let currentRoom = '';
         let myId = '';
-        const DIRECTIONS = ['n', 'e', 's', 'w'];
 
         socket.on('connect', () => { myId = socket.id; });
 
-        // 画面（セクション）を切り替える関数
-        function showScreen(screenId) {
+        function showScreen(id) {
             document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            document.getElementById(id).classList.add('active');
         }
 
-        // --- 1. メニュー処理 ---
         function startLoadingLobby() {
-            const nameInput = document.getElementById('p-name-input');
-            if (!nameInput.value) return alert('名前を入力してください');
-            
-            // サーバーに入室リクエスト
-            socket.emit('joinRoom', { roomId: currentRoom, playerName: nameInput.value });
-            
-            // ロビー画面のUI初期化（4つのスロットを作る）
-            const list = document.getElementById('player-list');
-            list.innerHTML = '';
-            for(let i=0; i<4; i++) {
-                list.innerHTML += `<div class="player-slot" id="slot-${i}">待機中...</div>`;
-            }
-            showScreen('lobby-screen'); // 待機画面へ
+            const name = document.getElementById('p-name-input').value;
+            const roomId = document.getElementById('room-id-input').value;
+            if (!name || !roomId) return alert('入力してください');
+            currentRoom = roomId;
+            document.getElementById('display-room-id').innerText = currentRoom;
+            socket.emit('joinRoom', { roomId: currentRoom, playerName: name });
+            showScreen('lobby-screen');
         }
 
-        // --- 2. ロビー処理 ---
-        function requestStartGame() {
-            socket.emit('startGame', currentRoom);
-        }
+        function requestStartGame() { socket.emit('startGame', currentRoom); }
 
-        // --- 3. ゲーム処理 ---
         function sendCommand() {
             const input = document.getElementById('chat-input');
-            if (input.value) {
-                socket.emit('chatCommand', { roomId: currentRoom, message: input.value });
+            const msg = input.value.trim();
+            if (msg) {
+                socket.emit('chatCommand', { roomId: currentRoom, message: msg });
                 input.value = '';
             }
         }
-        function callAshuratteru() {
-            socket.emit('callAshuratteru', currentRoom);
+        
+        document.getElementById('chat-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
+        function callAshuratteru() { socket.emit('callAshuratteru', currentRoom); }
+
+        // 🌟 右クリックイベントの送信
+        function handleRightClick(e, index) {
+            e.preventDefault(); // ブラウザ標準のメニューを封印
+            socket.emit('rightClickHand', { roomId: currentRoom, index: index });
         }
 
-        // --- サーバーからの状態更新を受け取る (ゲームの中心) ---
         socket.on('updateState', (state) => {
-            // A. 画面の切り替え
             if (state.gameState === 'lobby') {
-                showScreen('lobby-screen');
-                // ロビーのプレイヤーリスト更新
-                document.querySelectorAll('.player-slot').forEach(s => {s.classList.remove('occupied'); s.innerText = '待機中...';});
-                state.players.forEach((p, i) => {
-                    const slot = document.getElementById(`slot-${i}`);
-                    slot.classList.add('occupied');
-                    slot.innerText = p.name + `\n(${p.direction})`;
-                });
-                // ホスト（最初のプレイヤー）なら開始ボタンを表示
-                if(state.players[0].id === myId) {
-                    document.getElementById('start-game-btn').style.display = 'block';
-                }
+                document.getElementById('player-list').innerHTML = state.players.map(p => `<div>${p.name}(${p.direction})</div>`).join('');
+                if(state.players[0].id === myId) document.getElementById('start-game-btn').style.display = 'block';
             } 
-            else if (state.gameState === 'playing') {
-                showScreen('game-screen'); // ゲーム画面へ
-                
-                // B. 背景の変更（フォラン/未フォラン）
-                if (state.isForan) document.body.classList.add('foran');
-                else document.body.classList.remove('foran');
+            else if (state.gameState === 'playing' || state.gameState === 'gameover') {
+                showScreen('game-screen');
+                if (state.isForan) document.body.classList.add('foran'); else document.body.classList.remove('foran');
 
-                // C. プレイヤー情報(HUD)の更新
-                updateHud(state);
+                ['N', 'E', 'S', 'W'].forEach((dir) => {
+                    const p = state.players.find(p => p.direction === dir);
+                    const hudElement = document.getElementById(`hud-${dir.toLowerCase()}`);
+                    if (p && hudElement) {
+                        hudElement.innerHTML = `<div>${p.name}</div><div>得点: ${p.score}</div>`;
+                        if (state.turnIndex === state.players.indexOf(p) && state.gameState !== 'gameover') {
+                            hudElement.classList.add('active-turn');
+                        } else {
+                            hudElement.classList.remove('active-turn');
+                        }
+                    }
+                });
 
-                // D. 中央カードと自分の手札の描画
-                document.getElementById('field-card-container').innerHTML = createCardHTML(state.fieldCard);
+                const rs = document.getElementById('shared-redstone');
+                if (state.redstoneActive) rs.classList.add('on'); else rs.classList.remove('on');
+
+                ['N', 'E', 'S', 'W'].forEach(dir => {
+                    document.getElementById(`field-${dir}`).innerHTML = createCardHTML(state.fieldCards[dir]);
+                });
+
+                // 手札の描画 (ゲーム終了時は全員のカードが見えるようにするなどの拡張も可能)
                 const me = state.players.find(p => p.id === myId);
-                if (me) {
-                    const handHtml = me.hand.map(card => createCardHTML(card)).join('');
-                    document.getElementById('my-hand').innerHTML = handHtml;
+                if (me && me.hand) {
+                    document.getElementById('my-hand').innerHTML = me.hand.map((card, i) => {
+                        const isSelected = (me.ratonHandIndex === i) ? 'selected-red' : '';
+                        // oncontextmenu で右クリックを検知
+                        return `<div oncontextmenu="handleRightClick(event, ${i})" class="${isSelected}">${createCardHTML(card)}</div>`;
+                    }).join('');
+                    
+                    const inputField = document.getElementById('chat-input');
+                    if (me.commandState !== 'idle') {
+                        inputField.style.border = '2px solid red'; inputField.style.background = '#400';
+                    } else {
+                        inputField.style.border = 'none'; inputField.style.background = '#fff';
+                    }
                 }
             }
         });
 
-        // HUD（プレイヤー情報とランプ）を更新する関数
-        function updateHud(state) {
-            DIRECTIONS.forEach((dir_letter, i) => {
-                const hud = document.getElementById(`hud-${dir_letter}`);
-                const player = state.players[i]; // N=0, E=1...の想定
-                
-                if (!player) { hud.style.display = 'none'; return; }
-                
-                hud.style.display = 'block';
-                // ターンなら光らせる
-                if (state.turnIndex === i) hud.classList.add('active-turn');
-                else hud.classList.remove('active-turn');
-
-                // 電球(スコア)とレッドストーンのHTML生成
-                let bulbsHtml = '';
-                for(let j=0; j<2; j++) bulbsHtml += `<div class="bulb ${j < player.score ? 'on' : ''}"></div>`; // スコア分点灯
-                
-                let redstoneHtml = `<div class="redstone ${player.hasRedstone ? 'on' : ''}"></div>`; // 使用可能なら点灯
-
-                hud.innerHTML = `
-                    <div class="p-name">${player.name}</div>
-                    <div class="lamps">
-                        <span>銅:</span>${bulbsHtml}
-                        <span style="margin-left:5px">R:</span>${redstoneHtml}
-                    </div>
-                `;
-            });
-        }
-
-        // カードのHTML（ Unicodeアイコンを絵柄に使用してリッチに ）
-        const symbolIcons = { 'ピラミッド': '🔺', '目玉': '👁️', '太陽': '☀️', 'アミュレット': '🔮' };
-        const colorVars = { '桃色': '--c-pink', '青色': '--c-blue', '緑色': '--c-green', '黄色': '--c-yellow' };
-
+        const colorVars = { '桃色': '#ff0080', '青色': '#0080ff', '緑色': '#00ff80', '黄色': '#ffff00' };
         function createCardHTML(card) {
-            if (!card) return '<div class="card" style="border-color:#444">空</div>';
-            
-            // 型、絵柄をサーバー文字列から抽出
-            const type = card.symbol.split('(')[0]; // ハティロンなど
-            const symbolName = card.symbol.match(/\((.*)\)/)[1]; // ピラミッドなど
-            const icon = symbolIcons[symbolName] || '？';
-            const colorVar = colorVars[card.color] || '--primary';
-
-            return `
-                <div class="card" style="--c-main: var(${colorVar})">
-                    <span class="c-type">${card.color} ${type}</span>
-                    <span class="c-symbol">${icon}</span>
-                    <span class="c-number">${card.number}</span>
-                </div>
-            `;
+            if (!card) return '<div class="card" style="border-color:#444">裏</div>';
+            const cStr = colorVars[card.color] || '#ccc';
+            return `<div class="card" style="border-color:${cStr}; color:${cStr}">
+                <div style="font-size:0.8em">${card.symbol}</div>
+                <div style="font-size:1.5em; font-weight:bold">${card.number}</div>
+            </div>`;
         }
 
         socket.on('systemMessage', (msg) => {
@@ -316,7 +198,6 @@
             box.innerHTML += `<div>${msg}</div>`;
             box.scrollTop = box.scrollHeight;
         });
-        
         socket.on('errorMsg', (msg) => alert(msg));
     </script>
 </body>
