@@ -1,163 +1,155 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>MIND-0: JUDGEMENT</title>
-  <style>
-    /* 全体の設定：サイバーゴシックな雰囲気 */
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; }
-    #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-    
-    /* UIレイヤー：ネオンエフェクトとグラスモーフィズム */
-    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-    .hidden { display: none !important; }
-    
-    /* ネオンロゴ */
-    .game-logo { width: 400px; max-width: 80%; margin-top: 50px; filter: drop-shadow(0 0 15px #ff007a); }
+    <meta charset="UTF-8">
+    <title>現世と冥界の四柱</title>
+    <style>
+        :root {
+            --bg-gensei: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --bg-meikai: linear-gradient(135deg, #232526 0%, #414345 100%);
+            --card-pink: #ffb8c6; --card-blue: #a0c4ff;
+            --card-green: #caffbf; --card-yellow: #fdffb6;
+        }
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+            margin: 0; padding: 20px;
+            background: var(--bg-gensei); transition: background 1s ease;
+            color: #333; display: flex; flex-direction: column; align-items: center;
+        }
+        body.foran { background: var(--bg-meikai); color: #eee; }
+        
+        h1 { text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .board { display: flex; gap: 30px; margin-top: 20px; width: 100%; max-width: 800px; justify-content: center;}
+        
+        /* カードの美しいUIデザイン */
+        .card {
+            width: 100px; height: 140px;
+            border-radius: 10px; background: white; color: #111;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: bold; text-align: center; padding: 5px;
+            border: 6px solid #ccc;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card[data-color="桃色"] { border-color: var(--card-pink); }
+        .card[data-color="青色"] { border-color: var(--card-blue); }
+        .card[data-color="緑色"] { border-color: var(--card-green); }
+        .card[data-color="黄色"] { border-color: var(--card-yellow); }
+        .card-number { font-size: 2em; margin-top: 10px; }
 
-    /* ロビー画面 */
-    .game-ui { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
-    .glass-panel { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 50px 80px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-
-    /* かっこいいボタンの設定 */
-    .card-btn { font-size: 20px; padding: 15px 40px; margin: 10px; cursor: pointer; border-radius: 30px; border: 2px solid white; background: transparent; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: all 0.2s; position: relative; overflow: hidden;}
-    .card-btn:hover { background: #ff007a; border-color: #ff007a; box-shadow: 0 0 20px #ff007a; transform: scale(1.05); }
-
-    /* 入力フォームのネオン化 */
-    #room-input { font-size:20px; padding:12px; border:2px solid #ccc; border-radius:10px; background: rgba(0,0,0,0.5); color:white; margin-bottom: 20px; transition: border-color 0.2s; }
-    #room-input:focus { border-color: #ff007a; outline: none; }
-
-    /* メッセージテキストのネオン化 */
-    #log, #lobby-msg { margin: 20px; font-size: 24px; color: #ff007a; font-weight: bold; text-shadow: 0 0 10px #ff007a; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; }
-
-    /* バトル画面のレイアウト：対面形式 */
-    #battle-screen { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; padding: 20px; box-sizing: border-box; }
-    .status-area { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px 30px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); }
-    .hp-text { font-size: 28px; font-weight: bold; text-shadow: 0 0 10px #ff007a;}
-
-    /* アバター・カードエリア */
-    .game-board { display: flex; justify-content: center; align-items: center; gap: 50px; }
-    
-    /* イラスト付きカードの設定 */
-    .card {
-      width: 150px; height: 210px;
-      border-radius: 15px;
-      border: 2px solid white;
-      box-shadow: 0 0 15px rgba(0,0,0,0.8);
-      background-size: cover;
-      background-position: center;
-      position: relative;
-      transition: all 0.3s;
-    }
-    .card::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 13px; border: 1px solid rgba(255,255,255,0.3); }
-
-    /* ★カードの種類ごとの画像設定（ローカル画像に修正） */
-    
-    /* 手札（ATTACK） */
-    #hand-attack { background-image: url('./attack.png'); border-color: #00ddff; box-shadow: 0 0 15px #00ddff; cursor: pointer;}
-    #hand-attack:hover { transform: scale(1.1) rotate(5deg); }
-    
-    /* 手札（BLUFF） */
-    #hand-bluff { background-image: url('./bluff.png'); border-color: #ff007a; box-shadow: 0 0 15px #ff007a; cursor: pointer;}
-    #hand-bluff:hover { transform: scale(1.1) rotate(-5deg); }
-
-    /* 伏せられたカード（裏面共通） */
-    .card-facedown { background-image: url('./facedown.png'); border-color: white; filter: grayscale(100%); transition: all 1s; }
-    .card-facedown.revealed { filter: grayscale(0%); border-color: yellow; box-shadow: 0 0 25px yellow; }
-
-    /* 判定アイコン */
-    .judge-icon { width: 100px; height: 100px; background-size: contain; background-repeat: no-repeat; opacity: 0; transition: opacity 0.3s; margin-top: -50px;}
-    .truth-icon { background-image: url('./logo.png'); filter: drop-shadow(0 0 10px #00ddff); } 
-    .bluff-icon { background-image: url('./bluff.png'); filter: drop-shadow(0 0 10px #ff007a); } 
-
-    /* 手札エリアの設定 */
-    #hand { pointer-events: auto; display: flex; gap: 20px; justify-content: center; }
-    
-    /* 判定フェーズのUI */
-    #judgement-panel {
-      pointer-events: auto; display: none;
-      background: rgba(0, 0, 0, 0.8); border: 1px solid red; border-radius: 20px;
-      padding: 30px;
-    }
-    .judgement-btn { font-size: 18px; padding: 10px 30px; }
-    .judge-true { border-color: #00ddff; color: #00ddff; }
-    .judge-true:hover { background: #00ddff; color: #000; box-shadow: 0 0 20px #00ddff; }
-    .judge-lie { border-color: #ff007a; color: #ff007a; }
-    .judge-lie:hover { background: #ff007a; color: #000; box-shadow: 0 0 20px #ff007a; }
-
-  </style>
-  
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
+        .player-area, .field-area { display: flex; flex-direction: column; align-items: center; }
+        .hand { display: flex; gap: 10px; margin-top: 10px; }
+        
+        /* チャットとコマンドUI */
+        .ui-panel {
+            width: 100%; max-width: 600px; margin-top: 30px;
+            background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px;
+        }
+        body.foran .ui-panel { background: rgba(0,0,0,0.6); }
+        #chat-box { height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; font-size: 0.9em; }
+        .controls { display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; background: #6c5ce7; color: white;}
+        button:hover { background: #5b4bc4; }
+        #ashuratteru-btn { background: #ff4757; }
+    </style>
 </head>
 <body>
 
-  <canvas id="webgl-canvas"></canvas>
+    <h1 id="title">🔮 現世と冥界の四柱</h1>
+    <button onclick="joinRoom('ROOM_1')">ゲームルームに入室する</button>
 
-  <div id="ui-layer">
-    
-    <div id="lobby-screen" class="game-ui">
-      <img src="./logo.png" class="game-logo" alt="MIND-0 JUDGEMENT">
-      <br><br>
-      
-      <div class="glass-panel">
-        <button onclick="createRoom()" class="card-btn">ルームを作る</button>
-        <div style="margin: 30px 0;">
-          <input type="text" id="room-input" placeholder="部屋番号を入力">
-          <br>
-          <button onclick="joinRoom()" class="card-btn">ルームに参加</button>
+    <div class="board">
+        <div class="field-area">
+            <h3>場のカード (中央)</h3>
+            <div id="field-card"></div>
         </div>
-        <button onclick="playCPU()" class="card-btn" style="border-color: #444; color:#888;">CPUと対戦する</button>
-      </div>
-      <p id="lobby-msg"></p>
     </div>
 
-    <div id="battle-screen" class="game-ui hidden">
-      
-      <div class="status-area" style="grid-row: 1; margin-bottom: 20px; border-color: #444; background: rgba(0,0,0,0.5);">
-        <span style="color:#888;">敵のHP</span>
-        <span id="enemy-hp" class="hp-text" style="color:#888;">🖤🖤🖤</span>
-      </div>
-
-      <div class="game-board" style="grid-row: 2;">
-        
-        <div id="enemy-card" class="card card-facedown"></div>
-        
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
-          <div id="log">審判の始まりだ...。</div>
-          
-          <div id="judgement-panel">
-            <p style="margin-top:0;">相手の伏せ札は...？</p>
-            <button class="card-btn judgement-btn judge-true" onclick="submitJudgement(1)">真実(Attack)だ!</button>
-            <br>
-            <button class="card-btn judgement-btn judge-lie" onclick="submitJudgement(0)">嘘(Bluff)だ!</button>
-          </div>
-        </div>
-
-        <div id="my-card" class="card card-facedown"></div>
-      </div>
-
-      <div class="status-area" style="grid-row: 3; margin-top: 20px;">
-        <span style="color:#fff;">あなたのHP</span>
-        <span id="my-hp" class="hp-text">❤️❤️❤️</span>
-      </div>
-
-      <div id="hand-area" style="pointer-events: auto; position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;">
-        <div id="hand-attack" class="card" onclick="faceDownCard(1)"></div>
-        <div id="hand-bluff" class="card" onclick="faceDownCard(0)"></div>
-      </div>
+    <div class="player-area">
+        <h3>あなたの手札</h3>
+        <div id="my-hand" class="hand"></div>
     </div>
 
-  </div>
+    <div class="ui-panel">
+        <div id="chat-box"></div>
+        <div class="controls">
+            <input type="text" id="chat-input" placeholder="詠唱するコマンドを入力 (例: ラトン)">
+            <button onclick="sendCommand()">詠唱</button>
+            <button id="ashuratteru-btn" onclick="callAshuratteru()">⚡ アシュラッテル</button>
+        </div>
+    </div>
 
-  <script type="module" src="main.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        // ⚠️ 変更2：RenderのサーバーURLを直接指定して接続する
+        // "あなたのアプリ名" の部分を、Renderで発行されたURLに変えてください。
+        const socket = io('https://あなたのアプリ名.onrender.com');
+        
+        let currentRoom = '';
+        let myId = '';
+
+        // （以下、前回と同じJavaScriptの処理が続きます）
+        const socket = io();
+        let currentRoom = '';
+        let myId = '';
+
+        socket.on('connect', () => { myId = socket.id; });
+
+        function joinRoom(roomId) {
+            currentRoom = roomId;
+            socket.emit('joinRoom', roomId);
+        }
+
+        function sendCommand() {
+            if (!currentRoom) return alert("入室してください");
+            const input = document.getElementById('chat-input');
+            if (input.value) {
+                socket.emit('chatCommand', { roomId: currentRoom, message: input.value });
+                input.value = '';
+            }
+        }
+
+        function callAshuratteru() {
+            if (!currentRoom) return;
+            socket.emit('callAshuratteru', currentRoom);
+        }
+
+        socket.on('systemMessage', (msg) => {
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div>${msg}</div>`;
+            box.scrollTop = box.scrollHeight;
+        });
+
+        // 状態が更新されたら画面を描画し直す
+        socket.on('updateState', (state) => {
+            // 背景の変更（フォラン）
+            if (state.isForan) document.body.classList.add('foran');
+            else document.body.classList.remove('foran');
+
+            // 中央のカード描画
+            document.getElementById('field-card').innerHTML = createCardHTML(state.fieldCard);
+
+            // 自分の手札描画
+            const me = state.players.find(p => p.id === myId);
+            if (me) {
+                const handHtml = me.hand.map(card => createCardHTML(card)).join('');
+                document.getElementById('my-hand').innerHTML = handHtml;
+            }
+        });
+
+        // カードのHTMLを生成する関数
+        function createCardHTML(card) {
+            if (!card) return '<div class="card">空</div>';
+            return `
+                <div class="card" data-color="${card.color}">
+                    <span style="font-size: 0.8em; color: gray;">${card.color}</span>
+                    <span style="font-size: 0.9em;">${card.symbol}</span>
+                    <div class="card-number">${card.number}</div>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
