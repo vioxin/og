@@ -42,6 +42,14 @@
         #ui-panel { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 700px; background: rgba(0,0,0,0.8); padding: 10px; display: flex; gap: 10px; border: 1px solid var(--primary); }
         #chat-box { height: 100px; overflow-y: auto; flex: 1; border: 1px solid #333; padding: 5px; font-size: 0.85em; }
         #chat-input-area { display: flex; flex-direction: column; gap: 5px; width: 250px; }
+        /* 🌟 飛んでいくカード用のアニメーション設定 */
+        .flying-card {
+            position: fixed;
+            z-index: 9999;
+            transition: all 0.5s ease-in-out;
+            pointer-events: none; /* 飛んでいる最中にクリックを邪魔しない */
+            margin: 0 !important;
+        }
     </style>
 </head>
 <body>
@@ -134,7 +142,71 @@
             e.preventDefault(); // ブラウザ標準のメニューを封印
             socket.emit('rightClickHand', { roomId: currentRoom, index: index });
         }
+        // 🌟 アニメーションの受信と実行
+        socket.on('animateSwap', ({ playerId, playerDir, handIndex, targetDir }) => {
+            let sourceEl;
+            
+            // 誰がラトンをしたかで、出発地点を変える
+            if (playerId === myId) {
+                // 自分の場合は、手札の特定のカードが出発点
+                const handCards = document.querySelectorAll('#my-hand .card');
+                sourceEl = handCards[handIndex];
+            } else {
+                // 他人の場合は、その人のHUD(名前の枠)から飛んでくるように見せる
+                sourceEl = document.getElementById(`hud-${playerDir.toLowerCase()}`);
+            }
+            
+            // 目的地の場のカード
+            const targetEl = document.querySelector(`#field-${targetDir} .card`);
 
+            if (!sourceEl || !targetEl) return;
+
+            const srcRect = sourceEl.getBoundingClientRect();
+            const tgtRect = targetEl.getBoundingClientRect();
+
+            // 互いにカードを飛ばす
+            createFlyingCard(sourceEl, srcRect, tgtRect, playerId !== myId);
+            createFlyingCard(targetEl, tgtRect, srcRect, false);
+        });
+
+        // 🌟 クローンを作って飛ばす魔法の関数
+        function createFlyingCard(originalEl, startRect, endRect, isHiddenSource) {
+            let clone;
+            
+            // 他人の手札(HUD)から飛んでくる場合は、裏向きのカードを生成する
+            if (isHiddenSource) {
+                clone = document.createElement('div');
+                clone.className = 'card flying-card';
+                clone.innerHTML = '<div style="margin:auto; color:#444;">裏</div>';
+                clone.style.borderColor = '#444';
+            } else {
+                // それ以外は元のカードをそっくりそのままコピー
+                clone = originalEl.cloneNode(true);
+                clone.classList.add('flying-card');
+                clone.classList.remove('selected-red'); // 赤枠は消す
+            }
+            
+            // 初期位置をセット
+            clone.style.left = startRect.left + 'px';
+            clone.style.top = startRect.top + 'px';
+            clone.style.width = startRect.width + 'px';
+            clone.style.height = startRect.height + 'px';
+            
+            document.body.appendChild(clone);
+
+            // 一瞬待ってから目的地の座標へ移動させる（CSSのtransitionが発動）
+            requestAnimationFrame(() => {
+                clone.style.left = endRect.left + 'px';
+                clone.style.top = endRect.top + 'px';
+                // 少しだけ浮き上がりながら回転する演出
+                clone.style.transform = 'scale(1.1) rotate(10deg)'; 
+            });
+
+            // 0.5秒後（到着後）にクローンを消し去る
+            setTimeout(() => {
+                clone.remove();
+            }, 500);
+        }
         socket.on('updateState', (state) => {
             if (state.gameState === 'lobby') {
                 document.getElementById('player-list').innerHTML = state.players.map(p => `<div>${p.name}(${p.direction})</div>`).join('');
